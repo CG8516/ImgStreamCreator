@@ -23,6 +23,7 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.buttonOpenVideo = new System.Windows.Forms.Button();
             this.textBoxVideoInput = new System.Windows.Forms.TextBox();
             this.textBoxVideoOutput = new System.Windows.Forms.TextBox();
@@ -156,8 +157,10 @@
             this.Controls.Add(this.buttonOutputFolder);
             this.Controls.Add(this.textBoxVideoInput);
             this.Controls.Add(this.buttonOpenVideo);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "EFPSE Video Converter";
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownFrameRate)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownCompressionLevel)).EndInit();
             this.ResumeLayout(false);

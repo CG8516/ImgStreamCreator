@@ -35,6 +35,39 @@ namespace ImgStreamCreator {
         }
 
         private void buttonConvert_Click(object sender, EventArgs e) {
+            if(textBoxVideoInput.Text == "" || !File.Exists(textBoxVideoInput.Text)) {
+                MessageBox.Show("Please choose an input file!", "No input selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if(textBoxVideoInput.Text.EndsWith(".vid")) {
+                MessageBox.Show("This tool can only write vid files, not read them.", ".vid import not allowed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+
+            bool dirValid = false;
+            if(textBoxVideoOutput.Text == "") {
+                MessageBox.Show("Please choose an output file!", "Output not specified!", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+                
+            try {
+                string dir = Directory.GetParent(textBoxVideoOutput.Text).FullName;
+                dirValid = Directory.Exists(dir);
+                if (!dirValid)
+                    Directory.CreateDirectory(dir);
+                File.Create(textBoxVideoOutput.Text).Close();
+            } catch { }
+
+            if(!dirValid) {
+                if (textBoxVideoOutput.Text == "") {
+                    MessageBox.Show("Failed to write specified output file!", "Failed to save file",MessageBoxButtons.OK,MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+
             FileStream outputStream = new FileStream(textBoxVideoOutput.Text, FileMode.Create);
             string tempDir = "vid_tmp";
 
@@ -96,6 +129,8 @@ namespace ImgStreamCreator {
 
             outputWriter.Close();
             outputStream.Close();
+
+            MessageBox.Show("Conversion complete!", "Conversion complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
