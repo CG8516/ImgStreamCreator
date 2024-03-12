@@ -17,6 +17,19 @@ namespace ImgStreamCreator {
             InitializeComponent();
         }
 
+        enum VidEncoder {
+            mjpeg,
+            mpeg1
+        }
+
+        enum AudioEncoder {
+            none,
+            mp2
+        }
+
+        VidEncoder vidEncoder = VidEncoder.mpeg1;
+        AudioEncoder audioEncoder = AudioEncoder.mp2;
+
         private void buttonOpenVideo_Click(object sender, EventArgs e) {
             OpenFileDialog ofd = new OpenFileDialog();
             var dialogResult = ofd.ShowDialog();
@@ -78,7 +91,24 @@ namespace ImgStreamCreator {
             //Extract all the frames from the input video, storing temporarily in the 'ImgStream_tmp' folder
             ProcessStartInfo info = new ProcessStartInfo();
             string escapedInputName = string.Format(" \"{0}\" ", textBoxVideoInput.Text);
-            info.Arguments = "-i" + escapedInputName + " -q:v " + numericUpDownCompressionLevel.Value.ToString() + " " + tempDir + "\\%d.jpg";
+            float quality = 100-qualitySlider.Value;
+            quality /= 100.0f;
+            string extension = "";
+            switch(vidEncoder) {
+                case VidEncoder.mjpeg:
+                    quality *= 21.0f;
+                    info.Arguments = "-i" + escapedInputName + " -q:v " + ((int)quality).ToString() + " " + tempDir + "\\%d.jpg";
+                    audioEncoder = AudioEncoder.none;
+                    extension = ".jpg";
+                    break;
+                case VidEncoder.mpeg1:
+                    quality *= 21.0f;
+                    info.Arguments = "-i" + escapedInputName + " -c:v mpeg1video -q:v " + ((int)quality).ToString() + " -c:a mp2 -format mpeg " + tempDir + "\\1.mpg";
+                    audioEncoder = AudioEncoder.mp2;
+                    extension = ".mpg";
+                    break;
+            }
+            
             info.UseShellExecute = true;
             info.FileName = "ffmpeg.exe";
             Process proc = new Process();
@@ -96,7 +126,7 @@ namespace ImgStreamCreator {
             outputWriter.Write((Int32)0);   //versionInfo
 
             //Audio data
-            outputWriter.Write((Int32)0);   //Audio Type
+            outputWriter.Write((Int32)audioEncoder);   //Audio encoding
             outputWriter.Write((Int32)0);   //Audio offset
             outputWriter.Write((Int32)0);   //Audio length (bytes)
             outputWriter.Write((Int32)0);   //Reserved
@@ -104,7 +134,7 @@ namespace ImgStreamCreator {
             //Image data            
             outputWriter.Write(frameCount); //Frame count
             outputWriter.Write(frameRate);  //Frame rate
-            outputWriter.Write((Int32)0);   //Reserved
+            outputWriter.Write((Int32)vidEncoder);   //video encoding
 
             //Write placeholder data for all frame metadata (offsets and lengths)
             long offsetStart = outputWriter.BaseStream.Position;
@@ -120,17 +150,27 @@ namespace ImgStreamCreator {
                 long dataOffset = outputWriter.BaseStream.Position;
                 outputWriter.BaseStream.Seek(offsetStart + i * sizeof(Int64)*2, SeekOrigin.Begin);
                 outputWriter.Write((Int64)dataOffset);
-                byte[] jpegBytes = File.ReadAllBytes(tempDir + "\\" + (i + 1).ToString() + ".jpg");
-                outputWriter.Write((Int64)jpegBytes.Length);
+                byte[] frameBytes = File.ReadAllBytes(tempDir + "\\" + (i+1).ToString() + extension);
+                outputWriter.Write((Int64)frameBytes.Length);
                 outputWriter.BaseStream.Seek(dataOffset, SeekOrigin.Begin);
-                
-                outputWriter.Write(jpegBytes);
+                outputWriter.Write(frameBytes);
             }
 
             outputWriter.Close();
             outputStream.Close();
 
             MessageBox.Show("Conversion complete!", "Conversion complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void encoderSelection_SelectedIndexChanged(object sender, EventArgs e) {
+            vidEncoder = (VidEncoder)encoderSelection.SelectedIndex;
+            numericUpDownFrameRate.Enabled = true;
+            if (vidEncoder == VidEncoder.mpeg1)
+                numericUpDownFrameRate.Enabled = false;
+        }
+
+        private void qualitySlider_ValueChanged(object sender, EventArgs e) {
+            toolTip1.Show(qualitySlider.Value.ToString(), this, PointToClient(Cursor.Position).X, qualitySlider.Location.Y , 500);
         }
     }
 }
